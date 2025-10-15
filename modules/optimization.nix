@@ -1,56 +1,47 @@
 { config, pkgs, lib, ... }:
 
 {
-  # ===== OTIMIZAÇÕES AVANÇADAS PARA RASPBERRY PI 3 (1GB RAM) =====
-  # Versão 2.0 - Otimizações Extremas
+  # ===== OTIMIZAÇÕES PARA MÁXIMA RESPONSIVIDADE - RPi 3 =====
+  # Versão 2.2 - Foco em VELOCIDADE INTERATIVA
 
-  # 1. ZRAM SWAP AUMENTADO (75% da RAM - mais agressivo)
+  # 1. ZRAM MODERADO (50% - deixa mais RAM livre)
   zramSwap = {
     enable = true;
-    algorithm = "zstd";     # Compressão rápida e eficiente
-    memoryPercent = 75;     # 75% da RAM (~650MB) = ~1.5GB swap comprimido efetivo!
-    priority = 10;          # Prioridade mais alta que swap em arquivo
+    algorithm = "zstd";
+    memoryPercent = 50;     # 50% = ~434MB (mais RAM disponível!)
+    priority = 10;
   };
 
-  # 2. AJUSTES DE KERNEL AVANÇADOS
+  # 2. KERNEL - Favorece RESPONSIVIDADE
   boot.kernel.sysctl = {
-    # === MEMÓRIA ===
-    "vm.swappiness" = 5;                    # REDUZIDO: Praticamente nunca usa swap
-    "vm.vfs_cache_pressure" = 50;           # Mantém: Boa performance de I/O
-    "vm.min_free_kbytes" = 65536;           # NOVO: Garante 64MB sempre livre
-    "vm.overcommit_memory" = 1;             # NOVO: Permite overcommit (útil com ZRAM)
+    # MEMÓRIA - otimizado para interatividade
+    "vm.swappiness" = 10;
+    "vm.vfs_cache_pressure" = 50;
+    "vm.min_free_kbytes" = 16384;      # 16MB (menos reserva)
+    "vm.overcommit_memory" = 1;
 
-    # === DIRTY PAGES (reduz writes no SD card) ===
-    "vm.dirty_background_ratio" = 5;        # Mantém
-    "vm.dirty_ratio" = 10;                  # Mantém
-    "vm.dirty_expire_centisecs" = 3000;     # NOVO: Flush a cada 30s (padrão 30s)
-    "vm.dirty_writeback_centisecs" = 1500;  # NOVO: Writeback a cada 15s
+    # DIRTY PAGES - menos agressivo
+    "vm.dirty_background_ratio" = 10;   # AUMENTADO para menos writes
+    "vm.dirty_ratio" = 20;              # AUMENTADO
+    "vm.dirty_expire_centisecs" = 3000;
+    "vm.dirty_writeback_centisecs" = 500;  # Mais frequente
 
-    # === NETWORKING (reduz latência) ===
+    # NETWORKING - valores padrão (menos overhead)
     "net.ipv4.tcp_fin_timeout" = 30;
-    "net.ipv4.tcp_keepalive_time" = 600;    # NOVO: Reduz keepalive overhead
-    "net.ipv4.tcp_keepalive_intvl" = 60;
-    "net.ipv4.tcp_keepalive_probes" = 3;
-    "net.core.rmem_max" = 134217728;        # NOVO: 128MB receive buffer
-    "net.core.wmem_max" = 134217728;        # NOVO: 128MB send buffer
-    "net.ipv4.tcp_rmem" = "4096 87380 33554432";  # NOVO: Auto-tune receive
-    "net.ipv4.tcp_wmem" = "4096 65536 33554432";  # NOVO: Auto-tune send
+    "net.ipv4.tcp_fastopen" = 3;
 
-    # === SHARED MEMORY ===
-    "kernel.shmmax" = 268435456;            # Mantém: 256MB
-
-    # === KERNEL LOGGING (reduz overhead) ===
-    "kernel.printk" = "3 3 3 3";            # NOVO: Reduz spam no console
+    # SHARED MEMORY
+    "kernel.shmmax" = 268435456;
   };
 
-  # 3. TMPFS PARA /TMP (usa RAM ao invés de SD card)
+  # 3. /TMP PEQUENO (32MB é suficiente)
   fileSystems."/tmp" = {
     device = "tmpfs";
     fsType = "tmpfs";
-    options = [ "rw" "nosuid" "nodev" "size=128M" ];  # 128MB limite
+    options = [ "rw" "nosuid" "nodev" "size=32M" ];
   };
 
-  # 4. OTIMIZAÇÕES DE JOURNALD (limita uso de disco)
+  # 4. JOURNALD LIMITADO
   services.journald.extraConfig = ''
     SystemMaxUse=50M
     RuntimeMaxUse=50M
@@ -62,54 +53,52 @@
     ForwardToConsole=no
   '';
 
-  # 5. GARBAGE COLLECTION MAIS AGRESSIVO
+  # 5. NIX GC
   nix.gc = {
     automatic = true;
     dates = "weekly";
-    options = "--delete-older-than 14d";  # REDUZIDO: 30d → 14d
+    options = "--delete-older-than 21d";
   };
 
-  # Otimizações do Nix Store
   nix.settings = {
     auto-optimise-store = true;
     max-jobs = 1;
     cores = 2;
-    min-free = 536870912;              # NOVO: Garante 512MB livre no /nix/store
-    max-free = 2147483648;             # NOVO: Máximo 2GB livre (limpa se exceder)
+    min-free = 268435456;   # 256MB
+    max-free = 2147483648;  # 2GB
   };
 
-  # 6. DESABILITA SERVIÇOS DESNECESSÁRIOS (mais agressivo)
+  # 6. DESABILITA SERVIÇOS PESADOS
   systemd.services = {
-    "man-db".enable = false;              # Mantém: man-db
-    "systemd-journal-flush".enable = false;  # NOVO: Não persiste journal early boot
+    "man-db".enable = false;
+    "systemd-journal-flush".enable = false;
+    "systemd-oomd".enable = false;           # NOVO: Desabilita OOM killer
   };
 
-  # Desabilita timers desnecessários
   systemd.timers = {
-    "man-db".enable = false;              # Mantém
+    "man-db".enable = false;
   };
 
-  # 7. OTIMIZAÇÕES DE SYSTEMD
+  # 7. SYSTEMD - SEM accounting (overhead!)
   systemd.settings.Manager = {
-    DefaultTimeoutStartSec = "30s";       # Mantém
-    DefaultTimeoutStopSec = "15s";        # Mantém
-    DefaultMemoryAccounting = "yes";      # NOVO: Habilita memory accounting
-    DefaultCPUAccounting = "yes";         # NOVO: Habilita CPU accounting
+    DefaultTimeoutStartSec = "30s";
+    DefaultTimeoutStopSec = "15s";
+    # REMOVIDO: DefaultMemoryAccounting = "yes";  # Causa overhead!
+    # REMOVIDO: DefaultCPUAccounting = "yes";     # Causa overhead!
   };
 
-  # 8. AJUSTES DE REDE TCP BBR + otimizações
+  # 8. TCP BBR
   boot.kernelModules = [ "tcp_bbr" ];
   boot.kernel.sysctl."net.ipv4.tcp_congestion_control" = "bbr";
   boot.kernel.sysctl."net.core.default_qdisc" = "fq";
-  boot.kernel.sysctl."net.ipv4.tcp_fastopen" = 3;  # NOVO: TCP Fast Open
 
-  # 9. DESABILITA BLUETOOTH (não usado no RPi 3)
+  # 9. BLUETOOTH OFF
   hardware.bluetooth.enable = false;
 
-  # 10. LIMITA COREDUMPS (economiza espaço)
+  # 10. COREDUMPS OFF
   systemd.coredump.enable = false;
 
-  # 11. OTIMIZA READLINE (menos memória no shell)
+  # 11. READLINE
   environment.etc."inputrc".text = ''
     set bell-style none
     set completion-ignore-case on
