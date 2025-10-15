@@ -1,7 +1,6 @@
 { config, pkgs, ... }:
 
 {
-  # TODOS OS PACOTES DE UMA VEZ - Testando remote builds\!
   environment.systemPackages = with pkgs; [
     tmux
     vim
@@ -14,6 +13,7 @@
     fzf
     gh
     kitty.terminfo
+    gnumake
   ];
 
   programs.zsh.enable = true;
