@@ -8,6 +8,7 @@
     ./modules/users.nix
     ./modules/networking.nix
     ./modules/dotfiles.nix
+    ./modules/optimization.nix
   ];
 
   # Boot
