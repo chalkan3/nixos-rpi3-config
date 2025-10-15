@@ -47,7 +47,7 @@ This configuration was specifically designed to run NixOS on a **Raspberry Pi 3 
 │  │  ┌─────────────────────────────────────────────────┐ │  │
 │  │  │  configuration.nix (Orchestrator)               │ │  │
 │  │  │    ├─ hardware-configuration.nix               │ │  │
-│  │  │    ├─ modules/packages.nix (11 packages)       │ │  │
+│  │  │    ├─ modules/packages.nix (12 packages)       │ │  │
 │  │  │    ├─ modules/services.nix (SSH, firewall)     │ │  │
 │  │  │    ├─ modules/users.nix (3 users)              │ │  │
 │  │  │    ├─ modules/networking.nix (Ethernet)        │ │  │
@@ -91,7 +91,7 @@ This configuration was specifically designed to run NixOS on a **Raspberry Pi 3 
 - **Works for all users** automatically
 
 ### 📦 **Essential Packages**
-11 carefully selected packages for development:
+12 carefully selected packages for development:
 ```
 tmux     │ Terminal multiplexer
 vim      │ Classic editor
@@ -103,6 +103,7 @@ btop     │ System monitor
 lsd      │ Modern ls
 fzf      │ Fuzzy finder
 gh       │ GitHub CLI
+gnumake  │ GNU Make build tool
 kitty    │ Terminal emulator (terminfo)
 ```
 
@@ -164,7 +165,7 @@ kitty    │ Terminal emulator (terminfo)
 ├── configuration.nix              # Main orchestrator
 ├── hardware-configuration.nix     # Auto-detected hardware settings
 └── modules/
-    ├── packages.nix               # System packages (11 total)
+    ├── packages.nix               # System packages (12 total)
     ├── services.nix               # SSH, firewall configuration
     ├── users.nix                  # User management (reusable function)
     ├── networking.nix             # Network configuration
@@ -230,7 +231,7 @@ Defines all system packages using Nix's elegant syntax:
 environment.systemPackages = with pkgs; [
   tmux vim curl git wget
   btop neovim lsd fzf gh
-  kitty.terminfo
+  gnumake kitty.terminfo
 ];
 
 programs.zsh.enable = true;
@@ -683,14 +684,14 @@ OS: NixOS 25.11 (Warbler) aarch64
 Host: Raspberry Pi 3 Model B Rev 1.2
 Kernel: 6.1.73
 Uptime: 2 hours, 34 mins
-Packages: 11 (user) + 1783 (system)
+Packages: 12 (user) + 1783 (system)
 Shell: zsh 5.9
 Memory: 201MiB / 869MiB (23%)
 ```
 
 ### Package List
 ```bash
-$ which tmux vim nvim git curl wget btop lsd fzf gh
+$ which tmux vim nvim git curl wget btop lsd fzf gh make
 /run/current-system/sw/bin/tmux
 /run/current-system/sw/bin/vim
 /run/current-system/sw/bin/nvim
@@ -701,6 +702,7 @@ $ which tmux vim nvim git curl wget btop lsd fzf gh
 /run/current-system/sw/bin/lsd
 /run/current-system/sw/bin/fzf
 /run/current-system/sw/bin/gh
+/run/current-system/sw/bin/make
 ```
 
 ---
